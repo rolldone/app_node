@@ -1,0 +1,85 @@
+services:
+  keydb:
+    image: eqalpha/keydb:latest
+    restart: unless-stopped
+    command: ["keydb-server", "--save", "60", "1", "--appendonly", "yes"]
+    volumes:
+      - app_node_keydb:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-app_db}
+    ports:
+      - "${POSTGRES_HOST_IP:-0.0.0.0}:${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - app_node_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-app_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    ports:
+      - "${DOCKER_HOST_IP:-0.0.0.0}:${PGADMIN_HOST_PORT:-5433}:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - default
+
+  app:
+    container_name: app_node_app
+    build:
+      context: .
+      dockerfile: img_app_node_go/Dockerfile      
+    depends_on:
+      - keydb
+      - postgres
+    env_file:
+      - .env
+    ports:
+      - "${DOCKER_HOST_IP:-0.0.0.0}:${APP_HOST_PORT:-4651}:8080"
+    volumes:
+      - app_node_src:/app
+    # For development: override the container entrypoint so the container stays running
+    # and you can exec into it. This will be used only in dev; remove/override in prod.
+    entrypoint: ["tail", "-f", "/dev/null"]
+    restart: unless-stopped
+    links:
+      - keydb
+      - postgres
+    networks:
+      - default
+
+volumes:
+  app_node_keydb:
+    external: true
+  app_node_src:
+    external: true
+  app_node_postgres:
+    external: true
+  pgadmin_data:
+    external: false
+
+networks:
+  default:
+    external:
+      name: docker_network
