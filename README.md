@@ -424,7 +424,7 @@ Request Flow Diagram
 --------------------
 Below is a Mermaid diagram that visualizes the main request path and extension points.
 
-```mermaid
+```
 flowchart LR
    Client[Client HTTP] --> Server[cmd/server]
    Server --> Router[Router]
