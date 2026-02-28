@@ -448,7 +448,3 @@ flowchart LR
    PluginMW --> Hooks[Plugin hooks / response modifiers]
    Hooks --> Response
 ```
-
-Next steps
-----------
-- I can expand the README with deeper sections for Auth, DB, or Plugin internals, or refine the diagram. Pilih bagian berikutnya.
