@@ -61,6 +61,23 @@ func (s *AuthService) ListAdmins() ([]models.Admin, error) {
 	return list, nil
 }
 
+// ListAdminsWithPagination returns admins with pagination
+func (s *AuthService) ListAdminsWithPagination(limit, offset int) ([]models.Admin, int64, error) {
+	var list []models.Admin
+	var total int64
+
+	// Count total
+	if err := s.db.Model(&models.Admin{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Fetch page
+	if err := s.db.Order("created_at DESC").Limit(limit).Offset(offset).Find(&list).Error; err != nil {
+		return nil, 0, err
+	}
+	return list, total, nil
+}
+
 // UpdateAdmin updates an existing admin record. Caller should set ID.
 func (s *AuthService) UpdateAdmin(a *models.Admin) error {
 	// Save will update based on primary key
@@ -296,6 +313,42 @@ func (s *AuthService) CustomerRefreshTokens(refreshToken string) (accessToken st
 		return "", time.Time{}, "", time.Time{}, "", err
 	}
 	return at, aexp, plain, rexpires, newSess.ID, nil
+}
+
+// ListCustomers returns all customers (no pagination for now)
+func (s *AuthService) ListCustomers() ([]models.Customer, error) {
+	var list []models.Customer
+	if err := s.db.Order("created_at DESC").Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// ListCustomersWithPagination returns customers with pagination
+func (s *AuthService) ListCustomersWithPagination(limit, offset int) ([]models.Customer, int64, error) {
+	var list []models.Customer
+	var total int64
+
+	// Count total
+	if err := s.db.Model(&models.Customer{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Fetch page
+	if err := s.db.Order("created_at DESC").Limit(limit).Offset(offset).Find(&list).Error; err != nil {
+		return nil, 0, err
+	}
+	return list, total, nil
+}
+
+// UpdateCustomer updates an existing customer record. Caller should set ID.
+func (s *AuthService) UpdateCustomer(c *models.Customer) error {
+	return s.db.Save(c).Error
+}
+
+// DeleteCustomer deletes a customer by id
+func (s *AuthService) DeleteCustomer(id string) error {
+	return s.db.Delete(&models.Customer{}, "id = ?", id).Error
 }
 
 // Helper to get env-based TTL overrides (optional)

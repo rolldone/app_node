@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 
 	authpkg "go_framework/internal/auth"
 	"go_framework/internal/db"
+	"go_framework/internal/keydb"
 	"go_framework/plugins/auth/services"
 )
 
@@ -39,10 +41,25 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
+	// Get admin by email first for flash key
+	admin, adminErr := svc.GetAdminByEmail(req.Email)
+
 	at, aexp, refreshPlain, rexp, sid, err := svc.AuthenticateAndCreateSession(req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Store flash message in KeyDB (one-time read on /admin/auth/me)
+	// Use admin ID as key (more consistent than session ID)
+	// Expires in 60 seconds to avoid leftover keys
+	if adminErr == nil && admin != nil {
+		_ = keydb.SetFlash(
+			context.Background(),
+			admin.ID, // use admin ID as key
+			keydb.Flash{Type: "success", Message: "Login berhasil. Selamat datang admin!"},
+			60,
+		)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -112,7 +129,7 @@ func LogoutHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
-// GET /admin/me
+// GET /admin/auth/me
 func MeHandler(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
@@ -146,7 +163,17 @@ func MeHandler(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "admin not found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"admin": admin})
+
+	// Get and clear flash from KeyDB (one-time read)
+	// Use claims.AdminID as session identifier
+	flash, _ := keydb.GetAndClearFlash(context.Background(), claims.AdminID)
+
+	response := gin.H{"admin": admin}
+	if flash != nil {
+		response["flash"] = flash
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // POST /admin/register (create admin) - protected: SUPERADMIN only

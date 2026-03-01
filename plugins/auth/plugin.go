@@ -28,32 +28,43 @@ func (p *Plugin) RegisterMiddleware() []plugins.MiddlewareDescriptor {
 		},
 		{
 			Name:     "plugins.auth.member_claims",
-			Target:   "store",
+			Target:   "api",
 			Priority: 55,
 			Handler:  MemberClaimsMiddleware(),
 		},
 	}
 }
 
-func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, front *gin.RouterGroup, svcs *adminservices.AdminServices) error {
+func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api *gin.RouterGroup, svcs *adminservices.AdminServices) error {
 	admin.GET("/plugins/auth/health", pluginhandlers.HealthHandler)
-	admin.POST("/admin/login", pluginhandlers.LoginHandler)
-	admin.POST("/admin/refresh", pluginhandlers.RefreshHandler)
-	admin.POST("/admin/logout", pluginhandlers.LogoutHandler)
-	admin.GET("/admin/me", pluginhandlers.MeHandler)
-	admin.POST("/admin/register", pluginhandlers.RegisterAdminHandler)
-	// Admin CRUD
-	admin.GET("/admin/list", pluginhandlers.ListAdminsHandler)
-	admin.GET("/admin/:id", pluginhandlers.GetAdminHandler)
-	admin.PUT("/admin/:id", pluginhandlers.UpdateAdminHandler)
-	admin.DELETE("/admin/:id", pluginhandlers.DeleteAdminHandler)
-	// member (customer) routes mounted on front router under /member
-	if front != nil {
-		front.POST("/member/register", pluginhandlers.MemberRegisterHandler)
-		front.POST("/member/login", pluginhandlers.MemberLoginHandler)
-		front.POST("/member/refresh", pluginhandlers.MemberRefreshHandler)
-		front.POST("/member/logout", pluginhandlers.MemberLogoutHandler)
-		front.GET("/member/me", pluginhandlers.MemberMeHandler)
+
+	// Admin auth endpoints on /admin/auth
+	authAdmin := admin.Group("/auth")
+	authAdmin.POST("/login", pluginhandlers.LoginHandler)
+	authAdmin.POST("/refresh", pluginhandlers.RefreshHandler)
+	authAdmin.POST("/logout", pluginhandlers.LogoutHandler)
+	authAdmin.GET("/me", pluginhandlers.MeHandler)
+	authAdmin.POST("/register", pluginhandlers.RegisterAdminHandler)
+	authAdmin.GET("/list", pluginhandlers.ListAdminsHandler)
+	authAdmin.GET("/:id", pluginhandlers.GetAdminHandler)
+	authAdmin.PUT("/:id", pluginhandlers.UpdateAdminHandler)
+	authAdmin.DELETE("/:id", pluginhandlers.DeleteAdminHandler)
+
+	// Admin customer management at /admin/customers
+	adminCustomers := admin.Group("/customers")
+	adminCustomers.GET("", pluginhandlers.ListCustomersHandler)
+	adminCustomers.POST("", pluginhandlers.CreateCustomerHandler)
+	adminCustomers.GET("/:id", pluginhandlers.GetCustomerHandler)
+	adminCustomers.PUT("/:id", pluginhandlers.UpdateCustomerHandler)
+	adminCustomers.DELETE("/:id", pluginhandlers.DeleteCustomerHandler)
+
+	// Customer (member) auth routes on /api/auth
+	if api != nil {
+		api.POST("/auth/register", pluginhandlers.MemberRegisterHandler)
+		api.POST("/auth/login", pluginhandlers.MemberLoginHandler)
+		api.POST("/auth/refresh", pluginhandlers.MemberRefreshHandler)
+		api.POST("/auth/logout", pluginhandlers.MemberLogoutHandler)
+		api.GET("/auth/me", pluginhandlers.MemberMeHandler)
 	}
 	return nil
 }

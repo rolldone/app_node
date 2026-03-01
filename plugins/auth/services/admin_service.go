@@ -37,5 +37,8 @@ func (s *AdminService) RevokeByRefreshHash(hash string) error {
 }
 
 func (s *AdminService) ListAdmins() ([]models.Admin, error) { return s.core.ListAdmins() }
-func (s *AdminService) UpdateAdmin(a *models.Admin) error   { return s.core.UpdateAdmin(a) }
-func (s *AdminService) DeleteAdmin(id string) error         { return s.core.DeleteAdmin(id) }
+func (s *AdminService) ListAdminsWithPagination(limit, offset int) ([]models.Admin, int64, error) {
+	return s.core.ListAdminsWithPagination(limit, offset)
+}
+func (s *AdminService) UpdateAdmin(a *models.Admin) error { return s.core.UpdateAdmin(a) }
+func (s *AdminService) DeleteAdmin(id string) error       { return s.core.DeleteAdmin(id) }

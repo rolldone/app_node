@@ -30,6 +30,19 @@ func (s *MemberService) GetCustomerByEmail(email string) (*models.Customer, erro
 func (s *MemberService) GetCustomerByID(id string) (*models.Customer, error) {
 	return s.core.GetCustomerByID(id)
 }
+func (s *MemberService) ListCustomers() ([]models.Customer, error) {
+	return s.core.ListCustomers()
+}
+
+func (s *MemberService) ListCustomersWithPagination(limit, offset int) ([]models.Customer, int64, error) {
+	return s.core.ListCustomersWithPagination(limit, offset)
+}
+func (s *MemberService) UpdateCustomer(cust *models.Customer) error {
+	return s.core.UpdateCustomer(cust)
+}
+func (s *MemberService) DeleteCustomer(id string) error {
+	return s.core.DeleteCustomer(id)
+}
 func (s *MemberService) CustomerAuthenticateAndCreateSession(email, password string) (string, time.Time, string, time.Time, string, error) {
 	return s.core.CustomerAuthenticateAndCreateSession(email, password)
 }

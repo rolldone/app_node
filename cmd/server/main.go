@@ -18,6 +18,8 @@ import (
 	"go_framework/internal/app"
 	"go_framework/internal/plugins"
 	auth "go_framework/plugins/auth"
+	billing "go_framework/plugins/billing"
+	node "go_framework/plugins/node"
 )
 
 // main is a thin entrypoint; core boot logic lives in internal/app.
@@ -31,7 +33,7 @@ func main() {
 			// Example: register user plugins here
 			// plugins.RegisterPlugins([]plugins.Plugin{myPlugin.New()})
 			// plugins.RegisterPlugins([]plugins.Plugin{suppliers.New(), test_plugin.New()})
-			plugins.RegisterPlugins([]plugins.Plugin{auth.New()})
+			plugins.RegisterPlugins([]plugins.Plugin{auth.New(), billing.New(), node.New()})
 		},
 	})
 	if err != nil {

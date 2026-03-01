@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -19,6 +20,26 @@ type updateAdminReq struct {
 
 // GET /admin/list
 func ListAdminsHandler(c *gin.Context) {
+	type AdminListResponse struct {
+		Admins     []map[string]interface{} `json:"admins"`
+		TotalCount int64                    `json:"total_count"`
+	}
+
+	// Parse pagination
+	limit := 10
+	offset := 0
+
+	if val := c.Query("limit"); val != "" {
+		if parsed, err := strconv.Atoi(val); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+	if val := c.Query("offset"); val != "" {
+		if parsed, err := strconv.Atoi(val); err == nil && parsed >= 0 {
+			offset = parsed
+		}
+	}
+
 	gdb, err := db.GetGormDB()
 	if err != nil || gdb == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "db unavailable"})
@@ -29,12 +50,31 @@ func ListAdminsHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": serr.Error()})
 		return
 	}
-	list, err := svc.ListAdmins()
+	list, total, err := svc.ListAdminsWithPagination(limit, offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"admins": list})
+
+	// Convert to map to exclude password_hash
+	var dtos []map[string]interface{}
+	for _, admin := range list {
+		dtos = append(dtos, map[string]interface{}{
+			"id":            admin.ID,
+			"username":      admin.Username,
+			"email":         admin.Email,
+			"level":         admin.Level,
+			"is_active":     admin.IsActive,
+			"last_login_at": admin.LastLoginAt,
+			"created_at":    admin.CreatedAt,
+			"updated_at":    admin.UpdatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, AdminListResponse{
+		Admins:     dtos,
+		TotalCount: total,
+	})
 }
 
 // GET /admin/:id
