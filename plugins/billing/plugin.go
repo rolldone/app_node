@@ -1,12 +1,12 @@
 package billing
 
 import (
-	"go_framework/internal/admin/services"
 	"go_framework/internal/plugins"
 	pluginhandlers "go_framework/plugins/billing/handlers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
+	"gorm.io/gorm"
 )
 
 // Plugin Billing & Financial Management provides a CRUD sample scaffold.
@@ -16,11 +16,11 @@ func New() plugins.Plugin { return &Plugin{} }
 
 func (p *Plugin) ID() string { return "billing" }
 
-func (p *Plugin) RegisterServices(svcs *services.AdminServices) error { return nil }
+func (p *Plugin) RegisterServices(db *gorm.DB) error { return nil }
 
 func (p *Plugin) RegisterMiddleware() []plugins.MiddlewareDescriptor { return nil }
 
-func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api *gin.RouterGroup, svcs *services.AdminServices) error {
+func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api *gin.RouterGroup, db *gorm.DB) error {
 	// ========== ADMIN ROUTES (/admin/billing/*) ==========
 	billing := admin.Group("/billing")
 	{
@@ -77,7 +77,7 @@ func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api 
 	return nil
 }
 
-func (p *Plugin) Seed(svcs *services.AdminServices) error { return nil }
+func (p *Plugin) Seed(db *gorm.DB) error { return nil }
 
 func (p *Plugin) ConsoleCommands() []*cobra.Command {
 

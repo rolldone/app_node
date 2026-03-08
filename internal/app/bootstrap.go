@@ -17,13 +17,12 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	"go_framework/internal/admin/services"
 	"go_framework/internal/db"
-	front "go_framework/internal/front/services"
 	"go_framework/internal/keydb"
 	"go_framework/internal/pluginloader"
 	"go_framework/internal/plugins"
-	"go_framework/internal/server"
+
+	"gorm.io/gorm"
 )
 
 // Options customizes how the Umahstore app boots.
@@ -43,12 +42,11 @@ func Run(opts Options) error {
 
 // App contains the assembled server state.
 type App struct {
-	router        *gin.Engine
-	rootGroup     *gin.RouterGroup
-	adminGroup    *gin.RouterGroup
-	frontGroup    *gin.RouterGroup
-	services      *services.AdminServices
-	storeServices *front.StoreServices
+	router     *gin.Engine
+	rootGroup  *gin.RouterGroup
+	adminGroup *gin.RouterGroup
+	frontGroup *gin.RouterGroup
+	gdb        *gorm.DB
 }
 
 // New assembles the application: DB, services, routes, plugins, swagger.
@@ -76,11 +74,6 @@ func New(opts Options) (*App, error) {
 	} else {
 		log.Println("[INFO] KeyDB not configured (KEYDB_HOST/PORT missing), flash messages disabled")
 	}
-
-	svc := services.NewServices(gdb)
-	services.SetDefault(svc)
-	storeSvc := front.NewStoreServices(svc)
-	front.SetDefault(storeSvc)
 
 	r := gin.Default()
 
@@ -185,17 +178,15 @@ func New(opts Options) (*App, error) {
 	root := r.Group("")
 
 	admin := r.Group("/admin")
-	admin.Use(server.AuthMiddleware())
 
 	apiGroup := r.Group("/api")
 
 	app := &App{
-		router:        r,
-		rootGroup:     root,
-		adminGroup:    admin,
-		frontGroup:    apiGroup,
-		services:      svc,
-		storeServices: storeSvc,
+		router:     r,
+		rootGroup:  root,
+		adminGroup: admin,
+		frontGroup: apiGroup,
+		gdb:        gdb,
 	}
 
 	app.registerAdminRoutes()
@@ -231,7 +222,7 @@ func (a *App) attachPlugins(registerPlugins func()) error {
 		"api":    a.frontGroup,
 	})
 
-	return plugins.RegisterAllRoutes(a.router, a.adminGroup, a.frontGroup, a.services)
+	return plugins.RegisterAllRoutes(a.router, a.adminGroup, a.frontGroup, a.gdb)
 }
 
 // registerAdminRoutes wires all core admin endpoints.
