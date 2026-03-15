@@ -6,21 +6,22 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
-	"gorm.io/gorm"
 )
 
 // Plugin Billing & Financial Management provides a CRUD sample scaffold.
-type Plugin struct{}
+type Plugin struct {
+	deps plugins.ServiceDeps
+}
 
 func New() plugins.Plugin { return &Plugin{} }
 
 func (p *Plugin) ID() string { return "billing" }
 
-func (p *Plugin) RegisterServices(db *gorm.DB) error { return nil }
+func (p *Plugin) RegisterServices(deps plugins.ServiceDeps) error { p.deps = deps; return nil }
 
 func (p *Plugin) RegisterMiddleware() []plugins.MiddlewareDescriptor { return nil }
 
-func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api *gin.RouterGroup, db *gorm.DB) error {
+func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api *gin.RouterGroup) error {
 	// ========== ADMIN ROUTES (/admin/billing/*) ==========
 	billing := admin.Group("/billing")
 	{
@@ -77,7 +78,7 @@ func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api 
 	return nil
 }
 
-func (p *Plugin) Seed(db *gorm.DB) error { return nil }
+func (p *Plugin) Seed() error { return nil }
 
 func (p *Plugin) ConsoleCommands() []*cobra.Command {
 

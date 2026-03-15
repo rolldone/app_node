@@ -6,21 +6,22 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
-	"gorm.io/gorm"
 )
 
 // Plugin Node Management provides a CRUD sample scaffold.
-type Plugin struct{}
+type Plugin struct {
+	deps plugins.ServiceDeps
+}
 
 func New() plugins.Plugin { return &Plugin{} }
 
 func (p *Plugin) ID() string { return "node" }
 
-func (p *Plugin) RegisterServices(db *gorm.DB) error { return nil }
+func (p *Plugin) RegisterServices(deps plugins.ServiceDeps) error { p.deps = deps; return nil }
 
 func (p *Plugin) RegisterMiddleware() []plugins.MiddlewareDescriptor { return nil }
 
-func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api *gin.RouterGroup, db *gorm.DB) error {
+func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api *gin.RouterGroup) error {
 	// Admin routes - manage all resources
 	admin.GET("/node/nodes", pluginhandlers.ListNodes)
 	admin.POST("/node/nodes", pluginhandlers.CreateNode)
@@ -67,7 +68,7 @@ func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api 
 	return nil
 }
 
-func (p *Plugin) Seed(db *gorm.DB) error { return nil }
+func (p *Plugin) Seed() error { return nil }
 
 func (p *Plugin) ConsoleCommands() []*cobra.Command {
 

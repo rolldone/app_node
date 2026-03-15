@@ -5,18 +5,19 @@ import (
 	pluginhandlers "go_framework/plugins/auth/handlers"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 // Plugin auth provides a minimal scaffold.
-type Plugin struct{}
+type Plugin struct {
+	deps plugins.ServiceDeps
+}
 
 // New returns a new plugin instance.
 func New() plugins.Plugin { return &Plugin{} }
 
 func (p *Plugin) ID() string { return "auth" }
 
-func (p *Plugin) RegisterServices(db *gorm.DB) error { return nil }
+func (p *Plugin) RegisterServices(deps plugins.ServiceDeps) error { p.deps = deps; return nil }
 
 func (p *Plugin) RegisterMiddleware() []plugins.MiddlewareDescriptor {
 	return []plugins.MiddlewareDescriptor{
@@ -35,7 +36,7 @@ func (p *Plugin) RegisterMiddleware() []plugins.MiddlewareDescriptor {
 	}
 }
 
-func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api *gin.RouterGroup, db *gorm.DB) error {
+func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api *gin.RouterGroup) error {
 	admin.GET("/plugins/auth/health", pluginhandlers.HealthHandler)
 
 	// Admin auth endpoints on /admin/auth
@@ -69,4 +70,4 @@ func (p *Plugin) RegisterRoutes(router *gin.Engine, admin *gin.RouterGroup, api 
 	return nil
 }
 
-func (p *Plugin) Seed(db *gorm.DB) error { return nil }
+func (p *Plugin) Seed() error { return nil }
